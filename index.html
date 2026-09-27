@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>金銀中秋回饋活動</title>
+<style>
+:root{--gold:#e9bd55;--gold2:#ffe7a0;--red:#8d1417}
+*{box-sizing:border-box}
+body{
+ margin:0;min-height:100vh;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif;
+ background:radial-gradient(circle at 80% 8%,#6d5120 0,transparent 20%),linear-gradient(145deg,#050711,#161027 52%,#280a0b);
+}
+.wrap{max-width:1080px;margin:auto;padding:24px 16px 50px}
+.hero{text-align:center;margin-bottom:18px}
+.logo{display:inline-block;padding:8px 17px;border:1px solid var(--gold);border-radius:14px;background:#111c;color:var(--gold2);font-weight:1000;letter-spacing:3px}
+h1{margin:10px 0 2px;font-size:clamp(38px,7vw,68px);letter-spacing:7px;background:linear-gradient(#fff0ae,#d09125);-webkit-background-clip:text;color:transparent}
+.sub{color:#e9cf91}
+.panel{background:#080a12d9;border:1px solid #806126;border-radius:18px;padding:16px;margin:18px auto;max-width:900px;text-align:center}
+button{
+ border:0;border-radius:999px;padding:13px 30px;font-size:18px;font-weight:1000;cursor:pointer;
+ color:#211506;background:linear-gradient(135deg,#ffe9a0,#c78d27);box-shadow:0 7px 22px #0008
+}
+button:disabled{opacity:.45;cursor:not-allowed}
+.status{margin-top:10px;color:#e7d29d;min-height:22px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:13px}
+.card{height:180px;position:relative;perspective:900px;cursor:not-allowed}
+.card .inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .45s}
+.card .face{
+ position:absolute;inset:0;backface-visibility:hidden;border:2px solid #b9903c;border-radius:16px;
+ display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;
+ box-shadow:0 8px 20px #0009;overflow:hidden
+}
+.back{background:radial-gradient(circle at 50% 35%,#9c1d1e,#48090d 55%,#100609)}
+.back:after{content:"";position:absolute;inset:9px;border:1px solid #d0a44755;border-radius:11px}
+.seal{width:58px;height:58px;border:2px solid var(--gold);border-radius:50%;display:grid;place-items:center;font-size:32px;color:var(--gold2);z-index:1}
+.back b,.back span{z-index:1}.back b{margin-top:9px;letter-spacing:2px}.back span{font-size:11px;color:#d7bd7c;margin-top:5px}
+.front{transform:rotateY(180deg);background:linear-gradient(145deg,#251b0b,#080808)}
+.front strong{font-size:25px}.front em{font-style:normal;font-size:34px;font-weight:1000;color:#ffd762;margin-top:7px}.front small{margin-top:6px;color:#cfcfcf}
+.card.shuffling .inner{animation:shuffle .22s linear infinite}
+@keyframes shuffle{0%{transform:translate(0,0) rotate(0)}25%{transform:translate(7px,-4px) rotate(2deg)}50%{transform:translate(-6px,5px) rotate(-2deg)}75%{transform:translate(4px,3px) rotate(1deg)}100%{transform:translate(0,0) rotate(0)}}
+.card.selectable{cursor:pointer;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{50%{filter:brightness(1.22);transform:translateY(-2px)}}
+.card.selected .inner{transform:rotateY(180deg)}
+.card.disabled{opacity:.32;filter:grayscale(.8);pointer-events:none}
+.card.selected{cursor:default;animation:none}
+.result{display:none;margin:20px auto 0;max-width:500px;padding:18px;border:1px solid var(--gold);border-radius:16px;background:#090b12f0;text-align:center}
+.result.show{display:block}.result .big{font-size:28px;font-weight:1000;color:#ffd762;margin-top:5px}
+.note{text-align:center;color:#aaa;font-size:12px;margin-top:18px}
+@media(max-width:850px){.grid{grid-template-columns:repeat(3,1fr)}.card{height:165px}}
+@media(max-width:560px){.wrap{padding:17px 10px 35px}.grid{grid-template-columns:repeat(3,1fr);gap:8px}.card{height:145px}.front strong{font-size:19px}.front em{font-size:27px}.seal{width:48px;height:48px;font-size:26px}.back b{font-size:14px}.back span{font-size:9px}h1{letter-spacing:4px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="hero">
+  <div class="logo">金銀　GOLD SILVER</div>
+  <h1>中秋烤肉組</h1>
+  <div class="sub">🌕 中秋限定・幸運抽獎 🌕</div>
+ </div>
+
+ <div class="panel">
+  <button id="start">🎴 開始洗牌</button>
+  <div class="status" id="status">主持人按下「開始洗牌」後，牌面才會正式開始抽獎。</div>
+ </div>
+
+ <div class="grid" id="grid"></div>
+ <div class="result" id="result"></div>
+ <div class="note">抽獎規則：每次遊戲只能選擇一張牌；選定後其他牌會立即鎖定。</div>
+</div>
+
+<script>
+const prizes=[
+ ["青椒",50],["玉米",60],["吐司",70],["甜不辣",80],["香菇",90],
+ ["雞翅",120],["香腸",150],["五花肉",180],["雞腿肉串",220],["魷魚",260],
+ ["牛舌",300],["牛小排",350],["天使紅蝦",420],["龍蝦",580],["和牛",680]
+];
+
+const grid=document.getElementById("grid");
+const start=document.getElementById("start");
+const status=document.getElementById("status");
+const result=document.getElementById("result");
+let state="idle";
+let shuffled=[];
+
+function makeCards(){
+ grid.innerHTML="";
+ for(let i=0;i<15;i++){
+  const c=document.createElement("div");
+  c.className="card";
+  c.innerHTML=`<div class="inner">
+   <div class="face back"><div class="seal">金</div><b>神秘烤肉卡</b><span>等待洗牌</span></div>
+   <div class="face front"><strong>—</strong><em>—</em><small>中秋幸運獎</small></div>
+  </div>`;
+  c.addEventListener("click",()=>pick(c,i));
+  grid.appendChild(c);
+ }
+}
+function shuffle(a){
+ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+ return a;
+}
+function startGame(){
+ if(state==="shuffling"||state==="selecting") return;
+ state="shuffling"; result.classList.remove("show"); start.disabled=true;
+ status.textContent="🔥 正在快速洗牌……請稍候！";
+ const cards=[...document.querySelectorAll(".card")];
+ cards.forEach(c=>{c.className="card shuffling";});
+ let t=0;
+ const interval=setInterval(()=>{
+   shuffled=shuffle([...prizes]);
+   // 每一輪把獎品映射到位置，但仍全部蓋牌
+   cards.forEach((c,i)=>{
+     c.querySelector(".front strong").textContent=shuffled[i][0];
+     c.querySelector(".front em").textContent="$"+shuffled[i][1];
+   });
+   t+=120;
+   if(t>=1800){
+     clearInterval(interval);
+     state="selecting";
+     cards.forEach(c=>{c.className="card selectable";});
+     status.textContent="✨ 洗牌完成！請玩家選擇一張卡牌（只能選一次）。";
+   }
+ },120);
+}
+function pick(card,index){
+ if(state!=="selecting"||card.classList.contains("selected")||card.classList.contains("disabled"))return;
+ state="done";
+ const p=shuffled[index];
+ card.className="card selected";
+ [...document.querySelectorAll(".card")].forEach(c=>{if(c!==card)c.className="card disabled"});
+ status.textContent="🎉 抽獎完成！這位玩家已經不能再次選牌。";
+ result.innerHTML=`🎊 恭喜抽中！<div class="big">${p[0]}　$${p[1]}</div>`;
+ result.classList.add("show");
+ start.disabled=false;
+ start.textContent="🔄 下一位玩家／重新抽獎";
+}
+start.addEventListener("click",()=>{
+ if(state==="done"||state==="idle"){
+   makeCards();
+   startGame();
+ }
+});
+makeCards();
+</script>
+</body>
+</html>
